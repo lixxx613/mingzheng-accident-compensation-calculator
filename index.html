@@ -263,14 +263,125 @@ table tfoot td { font-weight: 700; border-top: 2px solid var(--text); }
 
 /* Print */
 @media print {
-  body { background: white; }
-  .app-header { position: static; }
+  body { background: white; margin: 0; padding: 0; }
+  @page { margin: 1.5cm; }
+  .app-header { position: static !important; }
+  .verify-overlay { display: none !important; }
   .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
-  .btn, .btn-group, #input-section { display: none; }
+  .btn, .btn-group, #input-section, .preset-bar, .modal-overlay { display: none !important; }
 }
+
+/* Preset Bar */
+.preset-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+.preset-bar .preset-label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-right: 4px;
+}
+.preset-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #f0f4ff;
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+  white-space: nowrap;
+}
+.preset-btn:hover { background: #dce8fc; border-color: var(--primary); color: var(--primary); }
+.preset-btn.clear-preset { background: #fff; color: var(--text-secondary); border-color: #ddd; }
+.preset-btn.clear-preset:hover { background: #fce8e6; border-color: var(--danger); color: var(--danger); }
+
+/* Save indicator */
+.save-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--success);
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.save-indicator.flash { opacity: 1; }
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.55);
+  z-index: 99998;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-card {
+  background: white;
+  border-radius: 12px;
+  padding: 28px 24px 20px;
+  max-width: 720px;
+  width: 92%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.modal-close {
+  position: absolute;
+  top: 12px; right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.modal-close:hover { background: #f1f3f4; color: var(--text); }
+.modal-card h3 { font-size: 1.1rem; margin-bottom: 16px; color: #1a3a5c; }
+.modal-card h4 { font-size: 0.95rem; margin: 14px 0 8px; color: var(--text); }
+.modal-card table { font-size: 0.85rem; margin-bottom: 16px; }
+.modal-card table.small-text { font-size: 0.78rem; }
+.modal-card .province-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 4px 12px;
+  font-size: 0.8rem;
+  margin-top: 6px;
+}
+.modal-card .province-grid span { color: var(--text-secondary); }
+
+/* Card Body (for collapsible panels) */
+.card-body { }
+.card-header .toggle-icon {
+  margin-left: auto;
+  font-size: 0.8rem;
+  transition: transform 0.25s ease;
+  color: var(--text-secondary);
+  display: none;
+}
+.card-header .toggle-icon.collapsed { transform: rotate(-90deg); }
 
 /* Responsive */
 @media (max-width: 768px) {
+  .card-header { cursor: pointer; user-select: none; }
+  .card-header .toggle-icon { display: inline-block; }
+  .card-body.collapsed { display: none; }
+  .card-body:not(.collapsed) { display: block; }
   .container { padding: 12px 10px; }
   .card { padding: 16px; }
   .form-grid { grid-template-columns: 1fr; }
@@ -278,6 +389,13 @@ table tfoot td { font-weight: 700; border-top: 2px solid var(--text); }
   .dependent-row { grid-template-columns: 1fr 1fr; }
   .btn-group { flex-direction: column; }
   .btn { justify-content: center; }
+  .preset-bar { gap: 6px; }
+  .preset-btn { font-size: 0.76rem; padding: 5px 10px; }
+}
+
+@media (min-width: 769px) {
+  .card-body { display: block !important; }
+  .card-header { cursor: default; }
 }
 
 /* Add dependent button */
@@ -363,12 +481,23 @@ table tfoot td { font-weight: 700; border-top: 2px solid var(--text); }
 <!-- ====== INPUT SECTION ====== -->
 <div id="input-section">
 
+  <!-- Preset Bar -->
+  <div class="preset-bar">
+    <span class="preset-label">📋 场景预设：</span>
+    <button class="preset-btn" onclick="applyPreset('shandong_disability')" title="山东·十级伤残·对方全责">山东·十级伤残·对方全责</button>
+    <button class="preset-btn" onclick="applyPreset('shandong_death')" title="山东·死亡赔偿·对方全责">山东·死亡赔偿·对方全责</button>
+    <button class="preset-btn" onclick="applyPreset('shandong_injury')" title="山东·一般受伤·对方全责">山东·一般受伤·对方全责</button>
+    <button class="preset-btn clear-preset" onclick="clearPreset()" title="清空预设字段">清空预设</button>
+  </div>
+
   <!-- Card 1: 基本信息 -->
   <div class="card">
-    <div class="card-header">
+    <div class="card-header" onclick="toggleCardBody(this)">
       <div class="icon icon-blue">👤</div>
       <h2>基本信息</h2>
+      <span class="toggle-icon">▼</span>
     </div>
+    <div class="card-body">
     <div class="form-grid">
       <div class="form-group">
         <label>受害人姓名</label>
@@ -408,14 +537,17 @@ table tfoot td { font-weight: 700; border-top: 2px solid var(--text); }
         <input type="text" id="accidentLocation" placeholder="请输入事故发生地点">
       </div>
     </div>
+    </div>
   </div>
 
   <!-- Card 2: 责任认定 -->
   <div class="card">
-    <div class="card-header">
+    <div class="card-header" onclick="toggleCardBody(this)">
       <div class="icon icon-orange">⚡</div>
       <h2>责任认定</h2>
+      <span class="toggle-icon">▼</span>
     </div>
+    <div class="card-body">
     <div class="form-grid">
       <div class="form-group">
         <label>受害人责任类型<span class="required">*</span></label>
@@ -444,14 +576,17 @@ table tfoot td { font-weight: 700; border-top: 2px solid var(--text); }
         <input type="number" id="insurancePaid" value="0" min="0" step="100">
       </div>
     </div>
+    </div>
   </div>
 
   <!-- Card 3: 伤害情况 -->
   <div class="card">
-    <div class="card-header">
+    <div class="card-header" onclick="toggleCardBody(this)">
       <div class="icon icon-red">🏥</div>
       <h2>伤害情况</h2>
+      <span class="toggle-icon">▼</span>
     </div>
+    <div class="card-body">
     <div class="form-grid">
       <div class="form-group">
         <label>伤害类型<span class="required">*</span></label>
@@ -504,14 +639,17 @@ table tfoot td { font-weight: 700; border-top: 2px solid var(--text); }
         <span class="hint">可参照当地护工劳务报酬标准</span>
       </div>
     </div>
+    </div>
   </div>
 
   <!-- Card 4: 费用明细 -->
   <div class="card">
-    <div class="card-header">
+    <div class="card-header" onclick="toggleCardBody(this)">
       <div class="icon icon-green">💰</div>
       <h2>各项费用明细</h2>
+      <span class="toggle-icon">▼</span>
     </div>
+    <div class="card-body">
     <div class="form-grid">
       <div class="form-group">
         <label>医疗费 (元)</label>
@@ -553,24 +691,33 @@ table tfoot td { font-weight: 700; border-top: 2px solid var(--text); }
         <span class="hint">法院酌定，一般死亡5-10万，伤残5千-5万</span>
       </div>
     </div>
+    </div>
   </div>
 
   <!-- Card 5: 被扶养人信息 -->
   <div class="card">
-    <div class="card-header">
+    <div class="card-header" onclick="toggleCardBody(this)">
       <div class="icon icon-blue">👨‍👩‍👧</div>
       <h2>被扶养人信息</h2>
+      <span class="toggle-icon">▼</span>
     </div>
+    <div class="card-body">
     <div id="dependentsContainer">
       <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:12px;">添加需要受害人扶养的家庭成员（未成年人、无劳动能力又无其他生活来源的成年近亲属）</p>
     </div>
     <button class="btn btn-outline btn-sm" onclick="addDependent()" style="margin-top:8px;">+ 添加被扶养人</button>
+    </div>
   </div>
 
   <!-- Action Buttons -->
-  <div class="btn-group" style="justify-content:center;margin-top:10px;">
+  <div class="btn-group" style="justify-content:center;margin-top:10px;align-items:center;">
     <button class="btn btn-primary btn-lg" onclick="calculate()">🧮 开始计算</button>
     <button class="btn btn-outline btn-lg" onclick="resetForm()">🔄 重置表单</button>
+    <button class="btn btn-outline" onclick="openReferenceModal()">📖 赔偿标准速查</button>
+    <span class="save-indicator" id="saveIndicator">💾 已自动保存</span>
+  </div>
+  <div style="text-align:center;margin-top:6px;">
+    <button class="btn btn-outline btn-sm" onclick="clearStorage()" style="font-size:0.8rem;">🗑️ 清除暂存数据</button>
   </div>
 
 </div>
@@ -611,6 +758,56 @@ table tfoot td { font-weight: 700; border-top: 2px solid var(--text); }
     <div class="btn-group" style="justify-content:center;margin-top:8px;">
       <button class="btn btn-outline" onclick="scrollToInput()">✏️ 返回修改</button>
     </div>
+  </div>
+</div>
+
+<!-- Reference Modal -->
+<div class="modal-overlay" id="referenceModal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeReferenceModal()" title="关闭">✕</button>
+    <h3>📖 赔偿标准速查表</h3>
+
+    <h4>一、伤残等级与赔偿系数</h4>
+    <table>
+      <thead>
+        <tr><th>伤残等级</th><th>赔偿系数</th><th>≤60岁</th><th>60-75岁</th><th>≥75岁</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>一级伤残</td><td>100%</td><td>20年</td><td>20-(年龄-60)年</td><td>5年</td></tr>
+        <tr><td>二级伤残</td><td>90%</td><td>20年</td><td>20-(年龄-60)年</td><td>5年</td></tr>
+        <tr><td>三级伤残</td><td>80%</td><td>20年</td><td>20-(年龄-60)年</td><td>5年</td></tr>
+        <tr><td>四级伤残</td><td>70%</td><td>20年</td><td>20-(年龄-60)年</td><td>5年</td></tr>
+        <tr><td>五级伤残</td><td>60%</td><td>20年</td><td>20-(年龄-60)年</td><td>5年</td></tr>
+        <tr><td>六级伤残</td><td>50%</td><td>20年</td><td>20-(年龄-60)年</td><td>5年</td></tr>
+        <tr><td>七级伤残</td><td>40%</td><td>20年</td><td>20-(年龄-60)年</td><td>5年</td></tr>
+        <tr><td>八级伤残</td><td>30%</td><td>20年</td><td>20-(年龄-60)年</td><td>5年</td></tr>
+        <tr><td>九级伤残</td><td>20%</td><td>20年</td><td>20-(年龄-60)年</td><td>5年</td></tr>
+        <tr><td>十级伤残</td><td>10%</td><td>20年</td><td>20-(年龄-60)年</td><td>5年</td></tr>
+      </tbody>
+    </table>
+
+    <h4>二、各省2025年度城镇居民人均可支配收入速查（元/年）</h4>
+    <table>
+      <thead>
+        <tr><th>省份</th><th>可支配收入</th><th>省份</th><th>可支配收入</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>上海</td><td>96,842</td><td>北京</td><td>96,292</td></tr>
+        <tr><td>浙江</td><td>81,649</td><td>江苏</td><td>68,956</td></tr>
+        <tr><td>广东</td><td>63,974</td><td>福建</td><td>61,437</td></tr>
+        <tr><td>天津</td><td>60,099</td><td>西藏</td><td>58,794</td></tr>
+        <tr><td>山东</td><td>56,444</td><td>湖南</td><td>53,369</td></tr>
+      </tbody>
+    </table>
+    <div class="province-grid">
+      <span>内蒙古 52,829</span><span>重庆 51,854</span><span>安徽 51,737</span><span>辽宁 50,057</span>
+      <span>江西 49,580</span><span>四川 49,428</span><span>湖北 49,164</span><span>陕西 49,053</span>
+      <span>河北 47,544</span><span>云南 46,699</span><span>宁夏 46,593</span><span>贵州 46,289</span>
+      <span>海南 45,829</span><span>新疆 45,106</span><span>广西 44,793</span><span>山西 44,649</span>
+      <span>河南 43,926</span><span>甘肃 43,910</span><span>青海 43,879</span><span>吉林 40,817</span>
+      <span>黑龙江 39,901</span>
+    </div>
+    <p style="font-size:0.75rem;color:var(--text-secondary);margin-top:12px;">数据来源：各省2025年国民经济和社会发展统计公报（2026年发布）。自2022年5月1日起全国统一按城镇居民标准计算，不再区分城乡。</p>
   </div>
 </div>
 
@@ -705,6 +902,203 @@ const PROVINCE_DATA = {
 };
 
 // ============================================================
+// LOCALSTORAGE AUTO-SAVE
+// ============================================================
+const STORAGE_KEY = '_mz_accident_form';
+
+function saveFormToStorage() {
+  const formData = {};
+  // All form inputs, selects, textareas inside #input-section
+  document.querySelectorAll('#input-section input, #input-section select, #input-section textarea').forEach(el => {
+    if (el.name) formData[el.name] = el.value;
+    else if (el.id) formData[el.id] = el.value;
+  });
+  // Also save dependent data
+  const deps = [];
+  for (let i = 1; i <= dependentCounter; i++) {
+    const row = document.getElementById(`dependent-row-${i}`);
+    if (!row) continue;
+    const dep = {};
+    row.querySelectorAll('select, input').forEach(el => {
+      if (el.id) dep[el.id] = el.value;
+    });
+    if (Object.keys(dep).length > 0) deps.push(dep);
+  }
+  formData['_dependents'] = deps;
+  formData['_dependentCounter'] = dependentCounter;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    // Flash the save indicator
+    const indicator = document.getElementById('saveIndicator');
+    if (indicator) {
+      indicator.classList.add('flash');
+      clearTimeout(indicator._timeout);
+      indicator._timeout = setTimeout(() => { indicator.classList.remove('flash'); }, 2000);
+    }
+  } catch(e) {
+    // Storage full or unavailable — silently ignore
+  }
+}
+
+function restoreFormFromStorage() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+    const formData = JSON.parse(saved);
+    // Restore form fields
+    document.querySelectorAll('#input-section input, #input-section select, #input-section textarea').forEach(el => {
+      const key = el.id || el.name;
+      if (key && formData[key] !== undefined) {
+        el.value = formData[key];
+      }
+    });
+    // Restore dependents
+    if (formData['_dependents'] && Array.isArray(formData['_dependents'])) {
+      dependentCounter = formData['_dependentCounter'] || 0;
+      const container = document.getElementById('dependentsContainer');
+      // Clear existing rows first
+      container.querySelectorAll('.dependent-row').forEach(el => el.remove());
+      // Rebuild
+      formData['_dependents'].forEach((depData, idx) => {
+        const i = idx + 1;
+        const row = document.createElement('div');
+        row.className = 'dependent-row';
+        row.id = `dependent-row-${i}`;
+        row.innerHTML = `
+          <div class="form-group">
+            <label>与被扶养人关系</label>
+            <select id="dep-relation-${i}">
+              <option value="child">未成年子女</option>
+              <option value="spouse">配偶（无劳动能力）</option>
+              <option value="parent">父母（无劳动能力）</option>
+              <option value="other">其他近亲属</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>年龄</label>
+            <input type="number" id="dep-age-${i}" value="0" min="0" max="120">
+          </div>
+          <div class="form-group">
+            <label>扶养人数（共同扶养人数）</label>
+            <input type="number" id="dep-sharers-${i}" value="1" min="1" max="10">
+          </div>
+          <div class="form-group">
+            <label>是否无劳动能力</label>
+            <select id="dep-no-labor-${i}">
+              <option value="minor">未成年人（无需认定）</option>
+              <option value="yes">是（无劳动能力）</option>
+              <option value="no">否（有劳动能力）</option>
+            </select>
+          </div>
+          <button class="btn-danger-sm" onclick="removeDependent(${i})" title="删除">✕</button>
+        `;
+        container.appendChild(row);
+        // Fill values
+        Object.keys(depData).forEach(k => {
+          const el = document.getElementById(k);
+          if (el) el.value = depData[k];
+        });
+      });
+    }
+    // Update dependentCounter if restored
+    if (formData['_dependentCounter']) {
+      dependentCounter = formData['_dependentCounter'];
+    }
+  } catch(e) {
+    // Corrupted data — ignore
+  }
+}
+
+function clearStorage() {
+  localStorage.removeItem(STORAGE_KEY);
+  showToast('🗑️ 已清除暂存数据');
+}
+
+// ============================================================
+// MODAL — 赔偿标准速查
+// ============================================================
+function openReferenceModal() {
+  document.getElementById('referenceModal').classList.add('show');
+  saveFormToStorage();
+}
+
+function closeReferenceModal() {
+  document.getElementById('referenceModal').classList.remove('show');
+}
+
+// ============================================================
+// CARD COLLAPSE (Mobile)
+// ============================================================
+function toggleCardBody(headerEl) {
+  if (window.innerWidth > 768) return; // Desktop: no collapse
+  const card = headerEl.closest('.card');
+  if (!card) return;
+  const body = card.querySelector('.card-body');
+  const icon = headerEl.querySelector('.toggle-icon');
+  if (!body) return;
+  body.classList.toggle('collapsed');
+  if (icon) icon.classList.toggle('collapsed');
+}
+
+function setupMobileCards() {
+  if (window.innerWidth > 768) return;
+  // All card bodies collapsed except the first one
+  const cards = document.querySelectorAll('#input-section .card');
+  cards.forEach((card, idx) => {
+    const body = card.querySelector('.card-body');
+    const icon = card.querySelector('.card-header .toggle-icon');
+    if (body) {
+      if (idx === 0) {
+        body.classList.remove('collapsed');
+        if (icon) icon.classList.remove('collapsed');
+      } else {
+        body.classList.add('collapsed');
+        if (icon) icon.classList.add('collapsed');
+      }
+    }
+  });
+}
+
+// ============================================================
+// PRESET FUNCTIONS
+// ============================================================
+function applyPreset(presetType) {
+  // Common: province = 山东, victim liability = none (对方全责)
+  document.getElementById('province').value = '山东';
+  document.getElementById('victimLiability').value = 'none';
+  document.getElementById('otherPartyRatio').value = '100';
+  // Trigger province change to update nursing rate
+  onProvinceChange();
+
+  if (presetType === 'shandong_disability') {
+    document.getElementById('injuryType').value = 'disability';
+    document.getElementById('disabilityLevel').value = '10';
+  } else if (presetType === 'shandong_death') {
+    document.getElementById('injuryType').value = 'death';
+  } else if (presetType === 'shandong_injury') {
+    document.getElementById('injuryType').value = 'injury';
+  }
+
+  toggleInjuryFields();
+  updateLiabilityRatio();
+  saveFormToStorage();
+  showToast('✅ 场景预设已应用（费用金额未变动）');
+}
+
+function clearPreset() {
+  // Clear preset-related fields only (not fee amounts)
+  document.getElementById('province').value = '';
+  document.getElementById('victimLiability').value = 'none';
+  document.getElementById('otherPartyRatio').value = '100';
+  document.getElementById('injuryType').value = 'injury';
+  document.getElementById('disabilityLevel').value = '10';
+  toggleInjuryFields();
+  updateLiabilityRatio();
+  saveFormToStorage();
+  showToast('🔄 预设字段已清空');
+}
+
+// ============================================================
 // INITIALIZATION
 // ============================================================
 function init() {
@@ -730,8 +1124,47 @@ function init() {
   // Province change handler
   document.getElementById('province').addEventListener('change', onProvinceChange);
 
+  // Restore saved form data
+  restoreFormFromStorage();
+
   toggleInjuryFields();
   updateLiabilityRatio();
+
+  // Setup mobile card collapse
+  setupMobileCards();
+  window.addEventListener('resize', function() {
+    // Re-apply mobile collapse on resize
+    if (window.innerWidth > 768) {
+      // Desktop: expand all
+      document.querySelectorAll('.card-body').forEach(b => b.classList.remove('collapsed'));
+      document.querySelectorAll('.toggle-icon').forEach(i => i.classList.remove('collapsed'));
+    }
+  });
+
+  // Auto-save on input change (debounced)
+  let saveTimeout;
+  document.getElementById('input-section').addEventListener('input', function() {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(saveFormToStorage, 800);
+  });
+  // Also save on select change
+  document.getElementById('input-section').addEventListener('change', function(e) {
+    if (e.target.tagName === 'SELECT') {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(saveFormToStorage, 400);
+    }
+  });
+
+  // Modal close: Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeReferenceModal();
+    }
+  });
+  // Modal close: click overlay
+  document.getElementById('referenceModal').addEventListener('click', function(e) {
+    if (e.target === this) closeReferenceModal();
+  });
 }
 
 function toggleInjuryFields() {
@@ -1183,6 +1616,9 @@ function calculate() {
 
   // === Display results ===
   displayResults();
+
+  // Auto-save form data after calculation
+  saveFormToStorage();
 }
 
 function displayResults() {
@@ -1335,7 +1771,8 @@ function exportWord() {
   const doc = new Document({
     sections: [{
       children: [
-        new Paragraph({ text: '铭正咨询交通事故赔偿计算书', heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
+        new Paragraph({ text: '铭正咨询', heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 80 } }),
+        new Paragraph({ text: '交通事故赔偿计算书', heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
         new Paragraph({ text: `计算日期：${new Date().toLocaleDateString('zh-CN')}`, spacing: { after: 100 } }),
         new Paragraph({ text: `省份标准：${result.province}（2025年度）`, spacing: { after: 200 } }),
         new Paragraph({ text: '一、基本信息', heading: HeadingLevel.HEADING_2, spacing: { after: 100 } }),
@@ -1350,8 +1787,12 @@ function exportWord() {
         new Paragraph({ text: '1. 本计算基于《中华人民共和国民法典》第一千一百七十九条及《最高人民法院关于审理人身损害赔偿案件适用法律若干问题的解释》相关规定。' }),
         new Paragraph({ text: `2. 赔偿标准采用${result.province}省（自治区、直辖市）2025年度统计数据。` }),
         new Paragraph({ text: '3. 精神损害抚慰金为酌定项目，实际金额以法院判决为准。' }),
-        new Paragraph({ text: '4. 本计算书仅供参考，不构成法律意见。', spacing: { after: 400 } }),
-        new Paragraph({ text: '计算人（签名）：_______________    日期：_______________', spacing: { after: 200 } }),
+        new Paragraph({ text: '4. 本计算书仅供参考，不构成法律意见。' }),
+        new Paragraph({ text: '<!-- Ref: MZ-Accident-2026 -->', spacing: { after: 200 } }),
+        new Paragraph({ text: '计算人（签名）：_______________    日期：_______________', spacing: { after: 100 } }),
+        new Paragraph({ text: '', spacing: { after: 200 } }),
+        new Paragraph({ text: '铭正咨询', alignment: AlignmentType.CENTER }),
+        new Paragraph({ text: '联系电话：_______________  地址：_______________', alignment: AlignmentType.CENTER, spacing: { after: 200 } }),
       ]
     }]
   });
@@ -1446,7 +1887,9 @@ function resetForm() {
   toggleInjuryFields();
   window._calcResult = null;
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  showToast('🔄 表单已重置');
+  // Clear saved storage
+  localStorage.removeItem('_mz_accident_form');
+  showToast('🔄 表单已重置，🗑️ 已清除暂存数据');
 }
 
 function showToast(msg) {
