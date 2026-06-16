@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>铭正咨询交通事故赔偿计算器</title>
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --primary: #1a73e8;
+  --primary-dark: #1557b0;
+  --danger: #d93025;
+  --success: #188038;
+  --warning: #e37400;
+  --bg: #f0f2f5;
+  --card-bg: #ffffff;
+  --text: #202124;
+  --text-secondary: #5f6368;
+  --border: #dadce0;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+  --radius: 10px;
+  --transition: 0.2s ease;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Header */
+.app-header {
+  background: linear-gradient(135deg, #1a3a5c 0%, #1a5276 50%, #1a6fa0 100%);
+  color: white;
+  padding: 20px 0;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.app-header h1 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.app-header .subtitle {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+/* Container */
+.container { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
+
+/* Cards */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+.card:hover { box-shadow: var(--shadow-lg); }
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #e8eaed;
+}
+.card-header .icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: white;
+}
+.card-header h2 { font-size: 1.15rem; font-weight: 600; color: var(--text); }
+.icon-blue { background: var(--primary); }
+.icon-green { background: var(--success); }
+.icon-orange { background: var(--warning); }
+.icon-red { background: var(--danger); }
+
+/* Form Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.form-group { display: flex; flex-direction: column; }
+.form-group.full-width { grid-column: 1 / -1; }
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+.form-group label .required { color: var(--danger); margin-left: 2px; }
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: var(--transition);
+  background: #fafafa;
+  font-family: inherit;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,115,232,0.12);
+  background: white;
+}
+.form-group input[type="number"] { font-variant-numeric: tabular-nums; }
+.form-group .hint { font-size: 0.75rem; color: var(--text-secondary); margin-top: 3px; }
+
+/* Radio & Checkbox Groups */
+.radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  background: #fafafa;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.radio-group label:hover { border-color: var(--primary); background: #e8f0fe; }
+.radio-group input[type="radio"] { accent-color: var(--primary); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); box-shadow: 0 2px 6px rgba(26,115,232,0.3); }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { opacity: 0.9; }
+.btn-outline {
+  background: white;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+}
+.btn-outline:hover { background: #e8f0fe; }
+.btn-lg { padding: 12px 28px; font-size: 1rem; }
+.btn-block { width: 100%; justify-content: center; }
+.btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+/* Results */
+.result-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.result-card {
+  background: linear-gradient(135deg, #e8f0fe 0%, #f0f7ff 100%);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  border: 1.5px solid #c6dafc;
+}
+.result-card.highlight {
+  background: linear-gradient(135deg, #e6f4ea 0%, #f0faf3 100%);
+  border-color: #a8dab5;
+}
+.result-card .amount {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+.result-card.highlight .amount { color: var(--success); }
+.result-card .label { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
+
+/* Table */
+.table-wrapper { overflow-x: auto; margin-top: 16px; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+table th {
+  background: #f8f9fa;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+table tbody tr:hover { background: #f8f9fa; }
+table .text-right { text-align: right; }
+table .text-center { text-align: center; }
+table .amount-col { font-weight: 600; color: var(--primary); text-align: right; }
+table tfoot td { font-weight: 700; border-top: 2px solid var(--text); }
+
+/* Hidden sections */
+.hidden { display: none !important; }
+
+/* Tabs */
+.tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+.tab-btn {
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.tab-btn:hover { color: var(--primary); }
+
+/* Dependent section */
+.dependent-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 40px;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 10px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+/* Print */
+@media print {
+  body { background: white; }
+  .app-header { position: static; }
+  .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+  .btn, .btn-group, #input-section { display: none; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container { padding: 12px 10px; }
+  .card { padding: 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .app-header h1 { font-size: 1.3rem; }
+  .dependent-row { grid-template-columns: 1fr 1fr; }
+  .btn-group { flex-direction: column; }
+  .btn { justify-content: center; }
+}
+
+/* Add dependent button */
+.btn-sm { padding: 6px 14px; font-size: 0.85rem; }
+.btn-danger-sm {
+  background: none;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.btn-danger-sm:hover { background: #fce8e6; }
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--success);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>⚖️ 铭正咨询交通事故赔偿计算器</h1>
+  <p class="subtitle">基于《民法典》及最高人民法院人身损害赔偿司法解释 · 2025年度标准</p>
+</header>
+
+<div class="container">
+
+<!-- ====== INPUT SECTION ====== -->
+<div id="input-section">
+
+  <!-- Card 1: 基本信息 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon icon-blue">👤</div>
+      <h2>基本信息</h2>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>受害人姓名</label>
+        <input type="text" id="victimName" placeholder="请输入姓名">
+      </div>
+      <div class="form-group">
+        <label>年龄<span class="required">*</span></label>
+        <input type="number" id="victimAge" placeholder="请输入年龄" min="0" max="120" required>
+      </div>
+      <div class="form-group">
+        <label>户籍性质</label>
+        <select id="householdType">
+          <option value="urban">城镇</option>
+          <option value="rural">农村</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>事故发生省份<span class="required">*</span></label>
+        <select id="province" required>
+          <option value="">-- 请选择省份 --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>事故发生日期</label>
+        <input type="date" id="accidentDate">
+      </div>
+      <div class="form-group">
+        <label>计算基准日期</label>
+        <input type="date" id="calcDate">
+      </div>
+      <div class="form-group">
+        <label>救治医院</label>
+        <input type="text" id="treatmentHospital" placeholder="请输入救治医院名称">
+      </div>
+      <div class="form-group">
+        <label>事故地点</label>
+        <input type="text" id="accidentLocation" placeholder="请输入事故发生地点">
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2: 责任认定 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon icon-orange">⚡</div>
+      <h2>责任认定</h2>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>受害人责任类型<span class="required">*</span></label>
+        <select id="victimLiability">
+          <option value="none">无责任（对方全责）</option>
+          <option value="secondary">次要责任 (30%)</option>
+          <option value="equal">同等责任 (50%)</option>
+          <option value="primary">主要责任 (70%)</option>
+          <option value="full">全部责任 (100%)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>对方赔偿比例 (%)<span class="required">*</span></label>
+        <input type="number" id="otherPartyRatio" value="100" min="0" max="100" step="1">
+        <span class="hint">根据责任认定，对方应承担的赔偿比例</span>
+      </div>
+      <div class="form-group">
+        <label>交强险是否已赔付</label>
+        <select id="hasCompulsoryInsurance">
+          <option value="yes">是（已扣减交强险限额）</option>
+          <option value="no">否（未扣减）</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>交强险已赔付金额 (元)</label>
+        <input type="number" id="insurancePaid" value="0" min="0" step="100">
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3: 伤害情况 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon icon-red">🏥</div>
+      <h2>伤害情况</h2>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>伤害类型<span class="required">*</span></label>
+        <select id="injuryType" required>
+          <option value="injury">一般受伤</option>
+          <option value="disability">构成伤残</option>
+          <option value="death">死亡</option>
+        </select>
+      </div>
+      <div class="form-group" id="disabilityLevelGroup">
+        <label>伤残等级<span class="required">*</span></label>
+        <select id="disabilityLevel">
+          <option value="1">一级伤残 (100%)</option>
+          <option value="2">二级伤残 (90%)</option>
+          <option value="3">三级伤残 (80%)</option>
+          <option value="4">四级伤残 (70%)</option>
+          <option value="5">五级伤残 (60%)</option>
+          <option value="6">六级伤残 (50%)</option>
+          <option value="7">七级伤残 (40%)</option>
+          <option value="8">八级伤残 (30%)</option>
+          <option value="9">九级伤残 (20%)</option>
+          <option value="10" selected>十级伤残 (10%)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>住院天数</label>
+        <input type="number" id="hospitalDays" value="0" min="0">
+      </div>
+      <div class="form-group">
+        <label>误工天数</label>
+        <input type="number" id="workOffDays" value="0" min="0">
+      </div>
+      <div class="form-group">
+        <label>护理天数</label>
+        <input type="number" id="nursingDays" value="0" min="0">
+      </div>
+      <div class="form-group">
+        <label>营养期天数</label>
+        <input type="number" id="nutritionDays" value="0" min="0">
+        <span class="hint">根据医嘱或鉴定意见确定</span>
+      </div>
+      <div class="form-group">
+        <label>受害人月均收入 (元)</label>
+        <input type="number" id="monthlyIncome" value="0" min="0" step="100">
+        <span class="hint">用于计算误工费，无法确定时使用当地平均工资</span>
+      </div>
+      <div class="form-group">
+        <label>护理费标准 (元/天)</label>
+        <input type="number" id="nursingRate" value="150" min="0" step="10">
+        <span class="hint">可参照当地护工劳务报酬标准</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 4: 费用明细 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon icon-green">💰</div>
+      <h2>各项费用明细</h2>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>医疗费 (元)</label>
+        <input type="number" id="medicalExpense" value="0" min="0" step="100">
+      </div>
+      <div class="form-group">
+        <label>后续治疗费 (元)</label>
+        <input type="number" id="followUpExpense" value="0" min="0" step="100">
+        <span class="hint">根据医疗证明或鉴定确定</span>
+      </div>
+      <div class="form-group">
+        <label>康复费 (元)</label>
+        <input type="number" id="rehabExpense" value="0" min="0" step="100">
+      </div>
+      <div class="form-group">
+        <label>交通费 (元)</label>
+        <input type="number" id="transportExpense" value="0" min="0" step="10">
+      </div>
+      <div class="form-group">
+        <label>住宿费 (元)</label>
+        <input type="number" id="accommodationExpense" value="0" min="0" step="10">
+      </div>
+      <div class="form-group">
+        <label>残疾辅助器具费 (元)</label>
+        <input type="number" id="assistiveDeviceExpense" value="0" min="0" step="100">
+      </div>
+      <div class="form-group">
+        <label>鉴定费 (元)</label>
+        <input type="number" id="appraisalExpense" value="0" min="0" step="10">
+      </div>
+      <div class="form-group">
+        <label>财产损失 (元)</label>
+        <input type="number" id="propertyLoss" value="0" min="0" step="100">
+        <span class="hint">车辆维修费、衣物损失等</span>
+      </div>
+      <div class="form-group">
+        <label>精神损害抚慰金主张 (元)</label>
+        <input type="number" id="mentalAnguishClaim" value="0" min="0" step="1000">
+        <span class="hint">法院酌定，一般死亡5-10万，伤残5千-5万</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 5: 被扶养人信息 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon icon-blue">👨‍👩‍👧</div>
+      <h2>被扶养人信息</h2>
+    </div>
+    <div id="dependentsContainer">
+      <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:12px;">添加需要受害人扶养的家庭成员（未成年人、无劳动能力又无其他生活来源的成年近亲属）</p>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="addDependent()" style="margin-top:8px;">+ 添加被扶养人</button>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="btn-group" style="justify-content:center;margin-top:10px;">
+    <button class="btn btn-primary btn-lg" onclick="calculate()">🧮 开始计算</button>
+    <button class="btn btn-outline btn-lg" onclick="resetForm()">🔄 重置表单</button>
+  </div>
+
+</div>
+
+<!-- ====== RESULTS SECTION ====== -->
+<div id="results-section" class="hidden">
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon icon-green">📊</div>
+      <h2>赔偿计算结果</h2>
+    </div>
+
+    <div class="result-summary" id="resultSummary"></div>
+
+    <div class="table-wrapper">
+      <table id="resultTable">
+        <thead>
+          <tr>
+            <th>序号</th>
+            <th>赔偿项目</th>
+            <th>计算公式</th>
+            <th>计算过程</th>
+            <th>金额 (元)</th>
+          </tr>
+        </thead>
+        <tbody id="resultTableBody"></tbody>
+        <tfoot id="resultTableFoot"></tfoot>
+      </table>
+    </div>
+
+    <div class="btn-group" style="justify-content:center;margin-top:20px;">
+      <button class="btn btn-primary btn-lg" onclick="exportWord()">📄 导出 Word 赔偿计算书</button>
+      <button class="btn btn-success btn-lg" onclick="exportExcel()">📊 导出 Excel 明细表</button>
+      <button class="btn btn-outline btn-lg" onclick="window.print()">🖨️ 打印</button>
+    </div>
+
+    <div class="btn-group" style="justify-content:center;margin-top:8px;">
+      <button class="btn btn-outline" onclick="scrollToInput()">✏️ 返回修改</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// PROVINCE DATA — 2025 年度各省赔偿标准（2026年发布，2026年度案件适用）
+// 数据来源：国家统计局、各省2025年国民经济和社会发展统计公报
+// 说明：自2022年5月1日起全国统一按城镇居民标准计算，不再区分城乡
+// 城镇居民人均可支配收入/消费支出：据各省2026年发布的2025年度统计公报
+// 在岗职工平均工资：部分省份尚未公布2025年度数据，暂按2024年度×全国增速4.3%估算，标注*号
+// 住院伙食补助费：参照各省司法实践通常标准
+// 单位：元/年
+// ============================================================
+const PROVINCE_DATA = {
+  '北京':   { disposable: 96292, consumption: 54122, avgSalary: 227974, mealAllowance: 30 },
+  '天津':   { disposable: 60099, consumption: 39693, avgSalary: 143689, mealAllowance: 30 },
+  '河北':   { disposable: 47544, consumption: 30522, avgSalary: 99788,  mealAllowance: 30 },
+  '山西':   { disposable: 44649, consumption: 27339, avgSalary: 97180,  mealAllowance: 30 },
+  '内蒙古': { disposable: 52829, consumption: 34183, avgSalary: 111264, mealAllowance: 30 },
+  '辽宁':   { disposable: 50057, consumption: 31428, avgSalary: 103401, mealAllowance: 30 },
+  '吉林':   { disposable: 40817, consumption: 29745, avgSalary: 89939,  mealAllowance: 30 },
+  '黑龙江': { disposable: 39901, consumption: 28666, avgSalary: 92732,  mealAllowance: 30 },
+  '上海':   { disposable: 96842, consumption: 57076, avgSalary: 237856, mealAllowance: 30 },
+  '江苏':   { disposable: 68956, consumption: 43917, avgSalary: 139288, mealAllowance: 30 },
+  '浙江':   { disposable: 81649, consumption: 53223, avgSalary: 146883, mealAllowance: 30 },
+  '安徽':   { disposable: 51737, consumption: 30539, avgSalary: 106702, mealAllowance: 30 },
+  '福建':   { disposable: 61437, consumption: 41729, avgSalary: 112223, mealAllowance: 30 },
+  '江西':   { disposable: 49580, consumption: 30249, avgSalary: 95222,  mealAllowance: 30 },
+  '山东':   { disposable: 56444, consumption: 32561, avgSalary: 110784, mealAllowance: 30 },
+  '河南':   { disposable: 43926, consumption: 27319, avgSalary: 88561,  mealAllowance: 30 },
+  '湖北':   { disposable: 49164, consumption: 33376, avgSalary: 107708, mealAllowance: 30 },
+  '湖南':   { disposable: 53369, consumption: 33678, avgSalary: 98873,  mealAllowance: 30 },
+  '广东':   { disposable: 63974, consumption: 42726, avgSalary: 137218, mealAllowance: 30 },
+  '广西':   { disposable: 44793, consumption: 27163, avgSalary: 97018,  mealAllowance: 30 },
+  '海南':   { disposable: 45829, consumption: 32651, avgSalary: 120853, mealAllowance: 30 },
+  '重庆':   { disposable: 51854, consumption: 32764, avgSalary: 114672, mealAllowance: 30 },
+  '四川':   { disposable: 49428, consumption: 32181, avgSalary: 104537, mealAllowance: 30 },
+  '贵州':   { disposable: 46289, consumption: 29434, avgSalary: 97696,  mealAllowance: 30 },
+  '云南':   { disposable: 46699, consumption: 30689, avgSalary: 119353, mealAllowance: 30 },
+  '西藏':   { disposable: 58794, consumption: 33281, avgSalary: 155318, mealAllowance: 30 },
+  '陕西':   { disposable: 49053, consumption: 29807, avgSalary: 105732, mealAllowance: 30 },
+  '甘肃':   { disposable: 43910, consumption: 29052, avgSalary: 94051,  mealAllowance: 30 },
+  '青海':   { disposable: 43879, consumption: 27586, avgSalary: 115184, mealAllowance: 30 },
+  '宁夏':   { disposable: 46593, consumption: 29686, avgSalary: 113041, mealAllowance: 30 },
+  '新疆':   { disposable: 45106, consumption: 29702, avgSalary: 105107, mealAllowance: 30 },
+};
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+function init() {
+  const provinceSelect = document.getElementById('province');
+  for (const name of Object.keys(PROVINCE_DATA).sort()) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    provinceSelect.appendChild(opt);
+  }
+
+  // Set default dates
+  const today = new Date();
+  document.getElementById('accidentDate').value = today.toISOString().split('T')[0];
+  document.getElementById('calcDate').value = today.toISOString().split('T')[0];
+
+  // Injury type change handler
+  document.getElementById('injuryType').addEventListener('change', toggleInjuryFields);
+
+  // Liability change handler
+  document.getElementById('victimLiability').addEventListener('change', updateLiabilityRatio);
+
+  // Province change handler
+  document.getElementById('province').addEventListener('change', onProvinceChange);
+
+  toggleInjuryFields();
+  updateLiabilityRatio();
+}
+
+function toggleInjuryFields() {
+  const type = document.getElementById('injuryType').value;
+  const disGroup = document.getElementById('disabilityLevelGroup');
+  if (type === 'disability') {
+    disGroup.classList.remove('hidden');
+  } else {
+    disGroup.classList.add('hidden');
+  }
+}
+
+function updateLiabilityRatio() {
+  const type = document.getElementById('victimLiability').value;
+  const ratioMap = {
+    'none': 100,
+    'secondary': 70,
+    'equal': 50,
+    'primary': 30,
+    'full': 0
+  };
+  document.getElementById('otherPartyRatio').value = ratioMap[type] || 100;
+}
+
+function onProvinceChange() {
+  // Update any province-dependent defaults if needed
+  const prov = document.getElementById('province').value;
+  if (prov && PROVINCE_DATA[prov]) {
+    const data = PROVINCE_DATA[prov];
+    document.getElementById('nursingRate').value = Math.round(data.avgSalary / 12 / 30 * 0.3);
+  }
+}
+
+// ============================================================
+// DEPENDENT MANAGEMENT
+// ============================================================
+let dependentCounter = 0;
+
+function addDependent() {
+  dependentCounter++;
+  const container = document.getElementById('dependentsContainer');
+  const row = document.createElement('div');
+  row.className = 'dependent-row';
+  row.id = `dependent-row-${dependentCounter}`;
+  row.innerHTML = `
+    <div class="form-group">
+      <label>与被扶养人关系</label>
+      <select id="dep-relation-${dependentCounter}">
+        <option value="child">未成年子女</option>
+        <option value="spouse">配偶（无劳动能力）</option>
+        <option value="parent">父母（无劳动能力）</option>
+        <option value="other">其他近亲属</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>年龄</label>
+      <input type="number" id="dep-age-${dependentCounter}" value="0" min="0" max="120">
+    </div>
+    <div class="form-group">
+      <label>扶养人数（共同扶养人数）</label>
+      <input type="number" id="dep-sharers-${dependentCounter}" value="1" min="1" max="10">
+    </div>
+    <div class="form-group">
+      <label>是否无劳动能力</label>
+      <select id="dep-no-labor-${dependentCounter}">
+        <option value="minor">未成年人（无需认定）</option>
+        <option value="yes">是（无劳动能力）</option>
+        <option value="no">否（有劳动能力）</option>
+      </select>
+    </div>
+    <button class="btn-danger-sm" onclick="removeDependent(${dependentCounter})" title="删除">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+function removeDependent(id) {
+  const row = document.getElementById(`dependent-row-${id}`);
+  if (row) row.remove();
+}
+
+function getDependents() {
+  const deps = [];
+  for (let i = 1; i <= dependentCounter; i++) {
+    const row = document.getElementById(`dependent-row-${i}`);
+    if (!row) continue;
+    const ageEl = document.getElementById(`dep-age-${i}`);
+    const sharersEl = document.getElementById(`dep-sharers-${i}`);
+    const noLaborEl = document.getElementById(`dep-no-labor-${i}`);
+    const relationEl = document.getElementById(`dep-relation-${i}`);
+    if (!ageEl || !sharersEl || !noLaborEl || !relationEl) continue;
+
+    deps.push({
+      id: i,
+      relation: relationEl.value,
+      age: parseInt(ageEl.value) || 0,
+      sharers: parseInt(sharersEl.value) || 1,
+      noLabor: noLaborEl.value,
+    });
+  }
+  return deps;
+}
+
+// ============================================================
+// CALCULATION ENGINE
+// ============================================================
+
+/**
+ * Get disability coefficient based on level (1-10)
+ * Level 1 = 100%, Level 2 = 90%, ..., Level 10 = 10%
+ */
+function getDisabilityCoefficient(level) {
+  return (11 - level) / 10;
+}
+
+/**
+ * Calculate years multiplier for age-based compensation
+ * ≤60: 20 years
+ * 60-75: 20 - (age - 60) years
+ * ≥75: 5 years
+ */
+function getAgeAdjustedYears(age) {
+  if (age <= 60) return 20;
+  if (age < 75) return 20 - (age - 60);
+  return 5;
+}
+
+/**
+ * Calculate dependent support years
+ * For minors: until age 18
+ * For adults (no labor ability): same age adjustment
+ */
+function getDependentYears(age, isMinor) {
+  if (isMinor) {
+    return Math.max(0, 18 - age);
+  }
+  return getAgeAdjustedYears(age);
+}
+
+function calculate() {
+  // Validate
+  const province = document.getElementById('province').value;
+  if (!province) {
+    showToast('⚠️ 请选择事故发生省份');
+    return;
+  }
+
+  const provData = PROVINCE_DATA[province];
+  if (!provData) {
+    showToast('⚠️ 未找到该省份数据');
+    return;
+  }
+
+  const age = parseInt(document.getElementById('victimAge').value) || 0;
+  if (age <= 0 || age > 120) {
+    showToast('⚠️ 请输入有效的受害人年龄（1-120）');
+    return;
+  }
+
+  // Gather inputs
+  const injuryType = document.getElementById('injuryType').value;
+  const disabilityLevel = parseInt(document.getElementById('disabilityLevel').value) || 10;
+  const disabilityCoeff = injuryType === 'disability' ? getDisabilityCoefficient(disabilityLevel) : (injuryType === 'death' ? 1.0 : 0);
+  const hospitalDays = parseInt(document.getElementById('hospitalDays').value) || 0;
+  const workOffDays = parseInt(document.getElementById('workOffDays').value) || 0;
+  const nursingDays = parseInt(document.getElementById('nursingDays').value) || 0;
+  const nutritionDays = parseInt(document.getElementById('nutritionDays').value) || 0;
+  const monthlyIncome = parseFloat(document.getElementById('monthlyIncome').value) || 0;
+  const nursingRate = parseFloat(document.getElementById('nursingRate').value) || 0;
+  const medicalExpense = parseFloat(document.getElementById('medicalExpense').value) || 0;
+  const followUpExpense = parseFloat(document.getElementById('followUpExpense').value) || 0;
+  const rehabExpense = parseFloat(document.getElementById('rehabExpense').value) || 0;
+  const transportExpense = parseFloat(document.getElementById('transportExpense').value) || 0;
+  const accommodationExpense = parseFloat(document.getElementById('accommodationExpense').value) || 0;
+  const assistiveDeviceExpense = parseFloat(document.getElementById('assistiveDeviceExpense').value) || 0;
+  const appraisalExpense = parseFloat(document.getElementById('appraisalExpense').value) || 0;
+  const propertyLoss = parseFloat(document.getElementById('propertyLoss').value) || 0;
+  const mentalAnguishClaim = parseFloat(document.getElementById('mentalAnguishClaim').value) || 0;
+  const otherPartyRatio = parseFloat(document.getElementById('otherPartyRatio').value) || 0;
+  const insurancePaid = parseFloat(document.getElementById('insurancePaid').value) || 0;
+
+  // Age-adjusted years
+  const ageYears = getAgeAdjustedYears(age);
+
+  // Daily income for lost wages calculation
+  let dailyIncome;
+  if (monthlyIncome > 0) {
+    dailyIncome = monthlyIncome / 30;
+  } else {
+    // Use local average salary
+    dailyIncome = provData.avgSalary / 365;
+  }
+
+  // === Calculate each item ===
+  const items = [];
+
+  // 1. 医疗费
+  items.push({
+    seq: 1,
+    name: '医疗费',
+    formula: '实际发生医疗费用',
+    process: `凭医疗票据`,
+    amount: medicalExpense,
+    category: 'medical'
+  });
+
+  // 2. 后续治疗费
+  if (followUpExpense > 0) {
+    items.push({
+      seq: 2,
+      name: '后续治疗费',
+      formula: '根据医疗证明或鉴定结论确定',
+      process: `预估后续治疗费用`,
+      amount: followUpExpense,
+      category: 'medical'
+    });
+  }
+
+  // 3. 康复费
+  if (rehabExpense > 0) {
+    items.push({
+      seq: 3,
+      name: '康复费',
+      formula: '实际发生康复费用',
+      process: `凭康复治疗票据`,
+      amount: rehabExpense,
+      category: 'medical'
+    });
+  }
+
+  // 4. 误工费
+  const lostWages = dailyIncome * workOffDays;
+  items.push({
+    seq: items.length + 1,
+    name: '误工费',
+    formula: '日均收入 × 误工天数',
+    process: `${dailyIncome.toFixed(2)} 元/天 × ${workOffDays} 天`,
+    amount: lostWages,
+    category: 'income'
+  });
+
+  // 5. 护理费
+  const nursingFee = nursingRate * nursingDays;
+  items.push({
+    seq: items.length + 1,
+    name: '护理费',
+    formula: '护理费标准 × 护理天数',
+    process: `${nursingRate.toFixed(2)} 元/天 × ${nursingDays} 天`,
+    amount: nursingFee,
+    category: 'care'
+  });
+
+  // 6. 交通费
+  if (transportExpense > 0) {
+    items.push({
+      seq: items.length + 1,
+      name: '交通费',
+      formula: '实际发生交通费用',
+      process: `就医及转院实际交通费用`,
+      amount: transportExpense,
+      category: 'expense'
+    });
+  }
+
+  // 7. 住宿费
+  if (accommodationExpense > 0) {
+    items.push({
+      seq: items.length + 1,
+      name: '住宿费',
+      formula: '实际发生住宿费用',
+      process: `受害人及陪护人员住宿费用`,
+      amount: accommodationExpense,
+      category: 'expense'
+    });
+  }
+
+  // 8. 住院伙食补助费
+  const mealAllowance = provData.mealAllowance * hospitalDays;
+  items.push({
+    seq: items.length + 1,
+    name: '住院伙食补助费',
+    formula: '当地标准 × 住院天数',
+    process: `${provData.mealAllowance} 元/天 × ${hospitalDays} 天`,
+    amount: mealAllowance,
+    category: 'allowance'
+  });
+
+  // 9. 营养费
+  const nutritionFee = 50 * nutritionDays;
+  items.push({
+    seq: items.length + 1,
+    name: '营养费',
+    formula: '营养费标准 × 营养期天数',
+    process: `50 元/天 × ${nutritionDays} 天（参照当地标准）`,
+    amount: nutritionFee,
+    category: 'allowance'
+  });
+
+  // 10. 残疾赔偿金 (only for disability or death)
+  if (injuryType === 'disability') {
+    const disabilityComp = provData.disposable * ageYears * disabilityCoeff;
+    items.push({
+      seq: items.length + 1,
+      name: '残疾赔偿金',
+      formula: '人均可支配收入 × 赔偿年限 × 伤残系数',
+      process: `${provData.disposable.toLocaleString()} 元/年 × ${ageYears} 年 × ${(disabilityCoeff * 100).toFixed(0)}%`,
+      amount: disabilityComp,
+      category: 'compensation',
+      highlight: true
+    });
+  }
+
+  // 11. 死亡赔偿金 (only for death)
+  if (injuryType === 'death') {
+    const deathComp = provData.disposable * ageYears;
+    items.push({
+      seq: items.length + 1,
+      name: '死亡赔偿金',
+      formula: '人均可支配收入 × 赔偿年限',
+      process: `${provData.disposable.toLocaleString()} 元/年 × ${ageYears} 年`,
+      amount: deathComp,
+      category: 'compensation',
+      highlight: true
+    });
+  }
+
+  // 12. 丧葬费 (only for death)
+  if (injuryType === 'death') {
+    const funeralExpense = provData.avgSalary / 12 * 6;
+    items.push({
+      seq: items.length + 1,
+      name: '丧葬费',
+      formula: '职工月平均工资 × 6个月',
+      process: `${provData.avgSalary.toLocaleString()} ÷ 12 × 6`,
+      amount: funeralExpense,
+      category: 'compensation'
+    });
+  }
+
+  // 13. 残疾辅助器具费
+  if (assistiveDeviceExpense > 0) {
+    items.push({
+      seq: items.length + 1,
+      name: '残疾辅助器具费',
+      formula: '实际发生辅助器具费用',
+      process: `凭购买票据`,
+      amount: assistiveDeviceExpense,
+      category: 'expense'
+    });
+  }
+
+  // 14. 被扶养人生活费
+  const dependents = getDependents();
+  let totalDependentSupport = 0;
+  dependents.forEach((dep, idx) => {
+    const isMinor = dep.noLabor === 'minor' || (dep.relation === 'child' && dep.age < 18);
+    const depYears = getDependentYears(dep.age, isMinor);
+    if (depYears <= 0) return;
+
+    // Per dependent: per capita consumption expenditure × years / sharers
+    const amount = provData.consumption * depYears / dep.sharers;
+
+    // If death, full calculation; if disability, apply disability coefficient
+    const adjustedAmount = injuryType === 'disability' ? amount * disabilityCoeff : amount;
+
+    totalDependentSupport += adjustedAmount;
+
+    const relationLabel = {
+      'child': '子女',
+      'spouse': '配偶',
+      'parent': '父母',
+      'other': '近亲属'
+    }[dep.relation] || '近亲属';
+
+    items.push({
+      seq: items.length + 1,
+      name: `被扶养人生活费（${relationLabel}，${dep.age}岁）`,
+      formula: '人均消费支出 × 扶养年限 ÷ 扶养人数' + (injuryType === 'disability' ? ' × 伤残系数' : ''),
+      process: `${provData.consumption.toLocaleString()} 元/年 × ${depYears.toFixed(1)} 年 ÷ ${dep.sharers} 人` + (injuryType === 'disability' ? ` × ${(disabilityCoeff * 100).toFixed(0)}%` : ''),
+      amount: adjustedAmount,
+      category: 'compensation'
+    });
+  });
+
+  // 15. 精神损害抚慰金
+  if (mentalAnguishClaim > 0) {
+    items.push({
+      seq: items.length + 1,
+      name: '精神损害抚慰金',
+      formula: '法院根据过错程度、损害后果等因素酌定',
+      process: `主张金额 ${mentalAnguishClaim.toLocaleString()} 元`,
+      amount: mentalAnguishClaim,
+      category: 'compensation'
+    });
+  }
+
+  // 16. 鉴定费
+  if (appraisalExpense > 0) {
+    items.push({
+      seq: items.length + 1,
+      name: '鉴定费',
+      formula: '实际发生鉴定费用',
+      process: `凭鉴定费票据`,
+      amount: appraisalExpense,
+      category: 'expense'
+    });
+  }
+
+  // 17. 财产损失
+  if (propertyLoss > 0) {
+    items.push({
+      seq: items.length + 1,
+      name: '财产损失',
+      formula: '实际财产损失金额',
+      process: `车辆维修费、物品损失等`,
+      amount: propertyLoss,
+      category: 'property'
+    });
+  }
+
+  // === Calculate totals ===
+  const totalCompensation = items.reduce((sum, item) => sum + item.amount, 0);
+  const payableAmount = totalCompensation * (otherPartyRatio / 100) - insurancePaid;
+  const finalPayable = Math.max(0, payableAmount);
+
+  // === Store for export ===
+  window._calcResult = {
+    province,
+    provData,
+    victimName: document.getElementById('victimName').value || '（未填写）',
+    victimAge: age,
+    injuryType,
+    disabilityLevel,
+    disabilityCoeff,
+    hospitalDays,
+    workOffDays,
+    nursingDays,
+    nutritionDays,
+    dailyIncome,
+    ageYears,
+    items,
+    totalCompensation,
+    otherPartyRatio,
+    insurancePaid,
+    finalPayable,
+    dependents,
+    treatmentHospital: document.getElementById('treatmentHospital').value || '（未填写）',
+    accidentLocation: document.getElementById('accidentLocation').value || '（未填写）',
+  };
+
+  // === Display results ===
+  displayResults();
+}
+
+function displayResults() {
+  const result = window._calcResult;
+  if (!result) return;
+
+  // Show results section, hide input
+  document.getElementById('input-section').classList.add('hidden');
+  document.getElementById('results-section').classList.remove('hidden');
+
+  // Summary cards
+  document.getElementById('resultSummary').innerHTML = `
+    <div class="result-card">
+      <div class="amount">¥ ${result.totalCompensation.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+      <div class="label">💰 各项损失合计</div>
+    </div>
+    <div class="result-card">
+      <div class="amount">${result.otherPartyRatio}%</div>
+      <div class="label">⚖️ 对方责任比例</div>
+    </div>
+    <div class="result-card highlight">
+      <div class="amount">¥ ${result.finalPayable.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+      <div class="label">✅ 应获赔偿金额</div>
+    </div>
+  `;
+
+  // Detail table
+  let tbodyHTML = '';
+  result.items.forEach((item, idx) => {
+    const highlightClass = item.highlight ? ' style="font-weight:700;color:#d93025;"' : '';
+    tbodyHTML += `
+      <tr>
+        <td class="text-center">${idx + 1}</td>
+        <td${highlightClass}>${item.name}</td>
+        <td style="font-size:0.85rem;color:var(--text-secondary);">${item.formula}</td>
+        <td style="font-size:0.85rem;color:var(--text-secondary);">${item.process}</td>
+        <td class="amount-col">${item.amount.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+      </tr>
+    `;
+  });
+
+  document.getElementById('resultTableBody').innerHTML = tbodyHTML;
+
+  const insuranceNote = result.insurancePaid > 0
+    ? `<tr><td colspan="4" style="text-align:right;">交强险已赔付：</td><td class="amount-col" style="color:var(--danger);">- ${result.insurancePaid.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>`
+    : '';
+
+  document.getElementById('resultTableFoot').innerHTML = `
+    <tr style="background:#f8f9fa;">
+      <td colspan="4" style="text-align:right;font-weight:700;">各项损失合计：</td>
+      <td class="amount-col" style="font-size:1.1rem;">${result.totalCompensation.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+    </tr>
+    <tr style="background:#f8f9fa;">
+      <td colspan="4" style="text-align:right;">对方赔偿比例：</td>
+      <td class="amount-col">${result.otherPartyRatio}% = ${(result.totalCompensation * result.otherPartyRatio / 100).toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+    </tr>
+    ${insuranceNote}
+    <tr style="background:#e6f4ea;">
+      <td colspan="4" style="text-align:right;font-weight:700;font-size:1.1rem;">✅ 应获赔偿金额：</td>
+      <td class="amount-col" style="font-size:1.2rem;color:var(--success);">${result.finalPayable.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+    </tr>
+  `;
+
+  // Scroll to results
+  document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function scrollToInput() {
+  document.getElementById('results-section').classList.add('hidden');
+  document.getElementById('input-section').classList.remove('hidden');
+  document.getElementById('input-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ============================================================
+// EXPORT FUNCTIONS
+// ============================================================
+
+function exportWord() {
+  const result = window._calcResult;
+  if (!result) { showToast('⚠️ 请先进行计算'); return; }
+
+  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, HeadingLevel } = docx;
+
+  // Build table rows — 4 columns: 序号 | 赔偿项目 | 计算过程 | 金额
+  const tableRows = [];
+
+  // Header row
+  tableRows.push(new TableRow({
+    children: [
+      new TableCell({ children: [new Paragraph({ text: '序号', alignment: AlignmentType.CENTER })] }),
+      new TableCell({ children: [new Paragraph({ text: '赔偿项目', alignment: AlignmentType.CENTER })] }),
+      new TableCell({ children: [new Paragraph({ text: '计算过程', alignment: AlignmentType.CENTER })] }),
+      new TableCell({ children: [new Paragraph({ text: '金额（元）', alignment: AlignmentType.CENTER })] }),
+    ]
+  }));
+
+  // Data rows
+  result.items.forEach((item, idx) => {
+    tableRows.push(new TableRow({
+      children: [
+        new TableCell({ children: [new Paragraph({ text: String(idx + 1), alignment: AlignmentType.CENTER })] }),
+        new TableCell({ children: [new Paragraph({ text: item.name })] }),
+        new TableCell({ children: [new Paragraph({ text: item.process, size: 18 })] }),
+        new TableCell({ children: [new Paragraph({ text: item.amount.toFixed(2), alignment: AlignmentType.RIGHT })] }),
+      ]
+    }));
+  });
+
+  // Empty separator row
+  tableRows.push(new TableRow({
+    children: [
+      new TableCell({ children: [new Paragraph({})] }),
+      new TableCell({ children: [new Paragraph({})] }),
+      new TableCell({ children: [new Paragraph({ text: '各项损失合计', alignment: AlignmentType.RIGHT, bold: true })] }),
+      new TableCell({ children: [new Paragraph({ text: result.totalCompensation.toFixed(2), alignment: AlignmentType.RIGHT, bold: true })] }),
+    ]
+  }));
+
+  tableRows.push(new TableRow({
+    children: [
+      new TableCell({ children: [new Paragraph({})] }),
+      new TableCell({ children: [new Paragraph({})] }),
+      new TableCell({ children: [new Paragraph({ text: `对方赔偿（${result.otherPartyRatio}%）`, alignment: AlignmentType.RIGHT })] }),
+      new TableCell({ children: [new Paragraph({ text: (result.totalCompensation * result.otherPartyRatio / 100).toFixed(2), alignment: AlignmentType.RIGHT })] }),
+    ]
+  }));
+
+  if (result.insurancePaid > 0) {
+    tableRows.push(new TableRow({
+      children: [
+        new TableCell({ children: [new Paragraph({})] }),
+        new TableCell({ children: [new Paragraph({})] }),
+        new TableCell({ children: [new Paragraph({ text: '扣减交强险已赔付', alignment: AlignmentType.RIGHT })] }),
+        new TableCell({ children: [new Paragraph({ text: `-${result.insurancePaid.toFixed(2)}`, alignment: AlignmentType.RIGHT })] }),
+      ]
+    }));
+  }
+
+  tableRows.push(new TableRow({
+    children: [
+      new TableCell({ children: [new Paragraph({})] }),
+      new TableCell({ children: [new Paragraph({})] }),
+      new TableCell({ children: [new Paragraph({ text: '应获赔偿金额', alignment: AlignmentType.RIGHT, bold: true, size: 22 })] }),
+      new TableCell({ children: [new Paragraph({ text: result.finalPayable.toFixed(2), alignment: AlignmentType.RIGHT, bold: true, size: 22 })] }),
+    ]
+  }));
+
+  const injuryTypeLabel = { 'injury': '一般受伤', 'disability': '构成伤残', 'death': '死亡' }[result.injuryType];
+
+  const doc = new Document({
+    sections: [{
+      children: [
+        new Paragraph({ text: '铭正咨询交通事故赔偿计算书', heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
+        new Paragraph({ text: `计算日期：${new Date().toLocaleDateString('zh-CN')}`, spacing: { after: 100 } }),
+        new Paragraph({ text: `省份标准：${result.province}（2025年度）`, spacing: { after: 200 } }),
+        new Paragraph({ text: '一、基本信息', heading: HeadingLevel.HEADING_2, spacing: { after: 100 } }),
+        new Paragraph({ text: `受害人：${result.victimName}    年龄：${result.victimAge}岁    伤害类型：${injuryTypeLabel}`, spacing: { after: 80 } }),
+        new Paragraph({ text: `救治医院：${result.treatmentHospital}    事故地点：${result.accidentLocation}`, spacing: { after: 80 } }),
+        new Paragraph({ text: `住院天数：${result.hospitalDays}天    误工天数：${result.workOffDays}天    护理天数：${result.nursingDays}天`, spacing: { after: 80 } }),
+        new Paragraph({ text: `对方责任比例：${result.otherPartyRatio}%`, spacing: { after: 200 } }),
+        new Paragraph({ text: '二、赔偿明细', heading: HeadingLevel.HEADING_2, spacing: { after: 200 } }),
+        new Table({ rows: tableRows, width: { size: 100, type: WidthType.PERCENTAGE } }),
+        new Paragraph({ text: '', spacing: { after: 200 } }),
+        new Paragraph({ text: '三、说明', heading: HeadingLevel.HEADING_2, spacing: { after: 100 } }),
+        new Paragraph({ text: '1. 本计算基于《中华人民共和国民法典》第一千一百七十九条及《最高人民法院关于审理人身损害赔偿案件适用法律若干问题的解释》相关规定。' }),
+        new Paragraph({ text: `2. 赔偿标准采用${result.province}省（自治区、直辖市）2025年度统计数据。` }),
+        new Paragraph({ text: '3. 精神损害抚慰金为酌定项目，实际金额以法院判决为准。' }),
+        new Paragraph({ text: '4. 本计算书仅供参考，不构成法律意见。', spacing: { after: 400 } }),
+        new Paragraph({ text: '计算人（签名）：_______________    日期：_______________', spacing: { after: 200 } }),
+      ]
+    }]
+  });
+
+  Packer.toBlob(doc).then(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `铭正咨询交通事故赔偿计算书_${result.victimName}_${new Date().toISOString().split('T')[0]}.docx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✅ Word 赔偿计算书已导出！');
+  }).catch(err => {
+    console.error('Word export error:', err);
+    showToast('❌ Word 导出失败，请重试');
+  });
+}
+
+function exportExcel() {
+  const result = window._calcResult;
+  if (!result) { showToast('⚠️ 请先进行计算'); return; }
+
+  // Build data for Excel
+  const data = [
+    ['铭正咨询交通事故赔偿计算明细表'],
+    [`省份标准：${result.province}（2025年度）`, '', '', `计算日期：${new Date().toLocaleDateString('zh-CN')}`],
+    [`受害人：${result.victimName}`, `年龄：${result.victimAge}岁`, `伤害类型：${result.injuryType === 'injury' ? '一般受伤' : result.injuryType === 'disability' ? '构成伤残' : '死亡'}`, `对方责任：${result.otherPartyRatio}%`],
+    [`救治医院：${result.treatmentHospital}`, `事故地点：${result.accidentLocation}`, '', ''],
+    [''],
+    ['序号', '赔偿项目', '计算公式', '计算过程', '金额（元）'],
+  ];
+
+  result.items.forEach((item, idx) => {
+    data.push([idx + 1, item.name, item.formula, item.process, item.amount]);
+  });
+
+  data.push(['', '', '', '各项损失合计', result.totalCompensation]);
+  data.push(['', '', '', `对方赔偿（${result.otherPartyRatio}%）`, result.totalCompensation * result.otherPartyRatio / 100]);
+  if (result.insurancePaid > 0) {
+    data.push(['', '', '', '扣减交强险已赔付', -result.insurancePaid]);
+  }
+  data.push(['', '', '', '应获赔偿金额', result.finalPayable]);
+  data.push(['']);
+  data.push(['说明：本表基于《民法典》及最高人民法院司法解释计算，仅供参考。']);
+
+  // Create workbook
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 6 },
+    { wch: 24 },
+    { wch: 34 },
+    { wch: 30 },
+    { wch: 16 },
+  ];
+
+  // Merge title row
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, '赔偿明细');
+
+  // Download
+  const filename = `铭正咨询交通事故赔偿明细_${result.victimName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  showToast('✅ Excel 赔偿明细表已导出！');
+}
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+
+function resetForm() {
+  document.getElementById('input-section').classList.remove('hidden');
+  document.getElementById('results-section').classList.add('hidden');
+  document.querySelectorAll('input[type="number"]').forEach(el => { el.value = el.id.includes('Ratio') ? el.value : '0'; });
+  document.getElementById('victimName').value = '';
+  document.getElementById('victimAge').value = '';
+  document.getElementById('province').value = '';
+  document.getElementById('injuryType').value = 'injury';
+  document.getElementById('victimLiability').value = 'none';
+  document.getElementById('disabilityLevel').value = '10';
+  document.getElementById('nursingRate').value = '150';
+  document.getElementById('otherPartyRatio').value = '100';
+  document.getElementById('insurancePaid').value = '0';
+  document.getElementById('hasCompulsoryInsurance').value = 'yes';
+  document.getElementById('dependentsContainer').querySelectorAll('.dependent-row').forEach(el => el.remove());
+  dependentCounter = 0;
+  toggleInjuryFields();
+  window._calcResult = null;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast('🔄 表单已重置');
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => { toast.classList.remove('show'); }, 2500);
+}
+
+// ============================================================
+// LAUNCH
+// ============================================================
+init();
+</script>
+
+</body>
+</html>
